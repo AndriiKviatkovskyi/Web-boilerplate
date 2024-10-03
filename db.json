@@ -1,0 +1,34 @@
+{
+  "users": [
+    {
+      "id": "RDI283654741",
+      "full_name": "Андрій A",
+      "course": "Mathematics",
+      "city": "Kyiv",
+      "country": "Afghanistan",
+      "age": 22,
+      "gender": "Male",
+      "email": "kav0512@ukr.net",
+      "phone": "380675284099",
+      "picture_large": null,
+      "favorite": false,
+      "bg_color": "#000000",
+      "note": ""
+    },
+    {
+      "id": "TFC291402125",
+      "full_name": "Test Test",
+      "course": "Mathematics",
+      "city": "Alger",
+      "country": "Algeria",
+      "age": 22,
+      "gender": "Male",
+      "email": "algeria@gmail.com",
+      "phone": "455664543",
+      "picture_large": null,
+      "favorite": false,
+      "bg_color": "#000000",
+      "note": "lemon juice"
+    }
+  ]
+}
