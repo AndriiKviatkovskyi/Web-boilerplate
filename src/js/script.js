@@ -1,4 +1,4 @@
-import {additionalUsers, randomUserMock} from "./FE4U-Lab2-mock.js";
+import {additionalUsers} from "./FE4U-Lab2-mock.js";
 
 const courses = ["Mathematics", "Physics", "English", "Computer Science", "Dancing", "Chess", "Biology", "Chemistry", "Law", "Art", "Medicine", "Statistics"];
 
@@ -200,8 +200,8 @@ function getMatchingPercentage(users, searchParam) {
     return percentage.toFixed(2);
 }
 
-
-const mergedUsers = mergeUsers(randomUserMock, additionalUsers);
+const apiUsers = await getUsers(50);
+const mergedUsers = mergeUsers(apiUsers, additionalUsers);
 //console.log(mergedUsers);
 
 
@@ -264,7 +264,7 @@ function hideAddPopup() {
     popup.style.visibility = 'hidden';
 }
 
-function addNewUser(event) {
+async function addNewUser(event) {
 
     event.preventDefault();
 
@@ -314,7 +314,7 @@ function addNewUser(event) {
         note: notes
     };
 
-    if(!validateUser(newUser).valid){
+    if (!validateUser(newUser).valid) {
         alert("Email/phone is invalid!");
         return;
     }
@@ -326,6 +326,27 @@ function addNewUser(event) {
     currentPage = Math.ceil(mergedUsers.length / itemsPerPage);
     displayUsers(sortedUsers, currentPage);
     setupPagination(sortedUsers);
+
+    try {
+        const response = await fetch('http://localhost:5000/users', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(newUser)
+        });
+
+        if (response.ok) {
+            const jsonResponse = await response.json();
+            console.log('Teacher added:', jsonResponse);
+            alert('Teacher added to server!');
+        } else {
+            console.error('Failed to add teacher:', response.statusText);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+
 
     document.querySelector('.add-teacher-form').reset();
 }
@@ -531,6 +552,8 @@ function updateFilters() {
     }
 
     shownUsers.forEach(user => addTeacherCard(user));
+
+    updateTable();
 }
 
 function searchUsers() {
@@ -564,7 +587,7 @@ function clearAllFilters() {
 const itemsPerPage = 10;
 let currentPage = 1;
 let ascendingOrder = true;
-let sortedUsers = JSON.parse(JSON.stringify(mergedUsers));
+let sortedUsers = JSON.parse(JSON.stringify(shownUsers));
 
 function displayUsers(users, page) {
     const startIndex = (page - 1) * itemsPerPage;
@@ -609,7 +632,7 @@ function handleTableHeaderClick(event) {
     const sortBy = event.target.getAttribute('data-sort');
     if (sortBy) {
         ascendingOrder = !ascendingOrder;
-        sortedUsers = sortUsers(mergedUsers, sortBy, ascendingOrder);
+        sortedUsers = sortUsers(shownUsers, sortBy, ascendingOrder); // Використовуємо shownUsers
         currentPage = 1;
         displayUsers(sortedUsers, currentPage);
         setupPagination(sortedUsers);
@@ -621,6 +644,14 @@ document.querySelectorAll('.sortable').forEach(header => {
 });
 
 function initTable() {
+    sortedUsers = JSON.parse(JSON.stringify(shownUsers));
+    displayUsers(sortedUsers, currentPage);
+    setupPagination(sortedUsers);
+}
+
+function updateTable() {
+    sortedUsers = JSON.parse(JSON.stringify(shownUsers));
+    currentPage = 1;
     displayUsers(sortedUsers, currentPage);
     setupPagination(sortedUsers);
 }
@@ -699,6 +730,43 @@ window.addNewTeacher = addNewUser;
 window.scrollToSection = scrollToSection;
 window.shiftLeft = shiftLeft;
 window.shiftRight = shiftRight;
+window.addMoreUsers = addMoreUsers;
+
+async function getUsers(count) {
+    try {
+        const response = await fetch(`https://randomuser.me/api/?results=${count}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        return data.results;
+    } catch (error) {
+        console.error('Error fetching users:', error);
+    }
+}
+
+async function addMoreUsers(count) {
+
+    let users = await getUsers(count);
+    users = mergeUsers(users, additionalUsers);
+
+    if (users && users.length > 0) {
+
+        users.forEach(user => {
+            mergedUsers.push(user);
+        });
+
+        updateFilters();
+
+        sortedUsers = sortUsers(shownUsers, 'full_name', ascendingOrder);
+        currentPage = Math.ceil(shownUsers.length / itemsPerPage);
+        displayUsers(sortedUsers, currentPage);
+        setupPagination(sortedUsers)
+    } else {
+        console.log('No users fetched.');
+    }
+}
+
 
 shownUsers.forEach(user => addTeacherCard(user));
 initTable();
