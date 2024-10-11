@@ -1,4 +1,8 @@
 import {additionalUsers} from "./FE4U-Lab2-mock.js";
+import L from 'leaflet';
+import Chart from 'chart.js/auto';
+import _ from 'lodash';
+import dayjs from 'dayjs';
 
 const courses = ["Mathematics", "Physics", "English", "Computer Science", "Dancing", "Chess", "Biology", "Chemistry", "Law", "Art", "Medicine", "Statistics"];
 
@@ -13,15 +17,15 @@ function generateRandomId() {
 }
 
 function mergeUsers(randomUserMock, additionalUsers) {
-    return randomUserMock.map((user) => {
+    return _.map(randomUserMock, (user) => {
 
-        const matchingAdditionalUser = additionalUsers.find((addUser) =>
+        const matchingAdditionalUser = _.find(additionalUsers, (addUser) =>
             addUser.full_name === `${user.name.first} ${user.name.last}`
         );
 
-        let unformatted_id = matchingAdditionalUser?.id ?? user?.id ?? null;
+        let unformatted_id = _.get(matchingAdditionalUser, 'id', user?.id);
         let user_id;
-        if (typeof unformatted_id !== 'string'){
+        if (!_.isString(unformatted_id)){
             user_id = `${unformatted_id.name}${unformatted_id.value}`.trim();
         } else{
             user_id = unformatted_id;
@@ -44,10 +48,10 @@ function mergeUsers(randomUserMock, additionalUsers) {
             picture_large: user.picture.large,
             picture_thumbnail: user.picture.thumbnail,
             id: user_id,
-            favorite: matchingAdditionalUser?.favorite ?? user?.favorite ?? false,
-            course: matchingAdditionalUser ? matchingAdditionalUser.course || getRandomCourse() : getRandomCourse(),
-            bg_color: matchingAdditionalUser?.bg_color ?? user?.bg_color ?? null,
-            note: matchingAdditionalUser?.note ?? user?.note ?? null
+            favorite: _.get(matchingAdditionalUser, 'favorite', _.get(user, 'favorite', false)), // Використали _.get
+            course: _.get(matchingAdditionalUser, 'course', getRandomCourse()), // Використали _.get
+            bg_color: _.get(matchingAdditionalUser, 'bg_color', _.get(user, 'bg_color', null)), // Використали _.get
+            note: _.get(matchingAdditionalUser, 'note', _.get(user, 'note', null)) // Використали _.get
         };
 
         return formattedUser;
@@ -93,17 +97,10 @@ function validateUser(user) {
     validateEmail(user.email);
     validatePhone(user.phone);
 
-    if (errors.length > 0) {
-        return {
-            valid: false,
-            errors: errors
-        };
-    } else {
-        return {
-            valid: true,
-            errors: errors
-        };
-    }
+    return {
+        valid: _.isEmpty(errors),
+        errors: errors
+    };
 }
 
 function validateAllUsers(users) {
@@ -119,14 +116,14 @@ function validateAllUsers(users) {
 }
 
 function filterUsers(users, filters) {
-    return users.filter(user => {
+    return _.filter(users, (user) => {
         return (
-            (filters.country ? user.country === filters.country : true) &&
-            (filters.ageMin !== undefined ? user.age >= filters.ageMin : true) &&
-            (filters.ageMax !== undefined ? user.age <= filters.ageMax : true) &&
-            (filters.gender ? user.gender === filters.gender : true) &&
-            (filters.favorite !== undefined ? user.favorite === filters.favorite : true) &&
-            (filters.hasPhoto !== undefined ? user.picture_large && user.picture_large.trim() !== '' : true)
+            (!filters.country || user.country === filters.country) &&
+            (_.isUndefined(filters.ageMin) || user.age >= filters.ageMin) &&
+            (_.isUndefined(filters.ageMax) || user.age <= filters.ageMax) &&
+            (!filters.gender || user.gender === filters.gender) &&
+            (_.isUndefined(filters.favorite) || user.favorite === filters.favorite) &&
+            (_.isUndefined(filters.hasPhoto) || _.get(user, 'picture_large', '').trim() !== '')
         );
     });
 }
@@ -150,29 +147,14 @@ function filterUsers(users, filters) {
 
 
 function sortUsers(users, sortBy, ascending = true) {
-
-    const usersCopy = JSON.parse(JSON.stringify(users)); // splice
-
-    return usersCopy.sort((a, b) => {
-        let comparison = 0;
-
-        if (typeof a[sortBy] === 'string') {
-            comparison = a[sortBy].localeCompare(b[sortBy]);
-        }
-
-        else if (typeof a[sortBy] === 'number') {
-            comparison = a[sortBy] - b[sortBy];
-        }
-
-        return ascending ? comparison : -comparison;
-    });
+    return _.orderBy(users, [sortBy], [ascending ? 'asc' : 'desc']);
 }
 
 function findUsers(users, searchParam) {
-    return users.filter(user => {
-        if (typeof searchParam === 'string' && /^[><=]\d+$/.test(searchParam)) {
+    return _.filter(users, (user) => {
+        if (_.isString(searchParam) && /^[><=]\d+$/.test(searchParam)) {
             const operator = searchParam[0];
-            const value = parseInt(searchParam.slice(1), 10);
+            const value = _.toNumber(searchParam.slice(1));
             if (operator === '>') {
                 return user.age > value;
             } else if (operator === '<') {
@@ -180,17 +162,15 @@ function findUsers(users, searchParam) {
             } else if (operator === '=') {
                 return user.age === value;
             }
-        } else if (typeof searchParam === 'string') {
+        } else if (_.isString(searchParam)) {
             return (
-                (user.full_name && user.full_name.includes(searchParam)) ||
-                (user.note && user.note.includes(searchParam))
+                _.includes(user.full_name, searchParam) ||
+                _.includes(user.note, searchParam)
             );
         }
-
         return false;
     });
 }
-
 function getMatchingPercentage(users, searchParam) {
 
     const matchingUsers = findUsers(users, searchParam);
@@ -311,7 +291,11 @@ async function addNewUser(event) {
         picture_large: null,
         favorite: false,
         bg_color: bgColor,
-        note: notes
+        note: notes,
+        coordinates: {
+            latitude: 0,
+            longitude: 0
+        }
     };
 
     if (!validateUser(newUser).valid) {
@@ -381,6 +365,8 @@ function showInfoPopup() {
     popup.querySelector('.d-teacher-agesex').textContent = `${userData.age}, ${userData.gender}`;
     popup.querySelector('.d-teacher-email').textContent = userData.email;
     popup.querySelector('.d-teacher-phone').textContent = userData.phone;
+    popup.querySelector('.d-teacher-days-till-bday').textContent =
+        `${getDaysUntilBirthday(userData.b_date)} days till birthday!`;
 
     if(userData.picture_large) {
         popup.querySelector('.img-div img').src = userData.picture_large;
@@ -424,6 +410,13 @@ function showInfoPopup() {
         mergedUsers[userIndex] = userData;
         initFavouritesCarousel();
         updateStar(favoriteStar, userData.favorite);
+    });
+
+    const oldToggleMap = popup.querySelector('.toggle-map');
+    const toggleMap = oldToggleMap.cloneNode(true);
+    oldToggleMap.replaceWith(toggleMap);
+    toggleMap.addEventListener('click', () => {
+        showMapPopup(userData.coordinates.latitude, userData.coordinates.longitude);
     });
     popup.style.visibility = 'visible';
 }
@@ -553,7 +546,7 @@ function updateFilters() {
 
     shownUsers.forEach(user => addTeacherCard(user));
 
-    updateTable();
+    updateCharts(shownUsers);
 }
 
 function searchUsers() {
@@ -767,8 +760,145 @@ async function addMoreUsers(count) {
     }
 }
 
+let map;
+function showMapPopup(lat, lon) {
+    const popup = document.getElementById('map-popup');
+    popup.style.visibility = 'visible'
+    if (map !== undefined) {
+        map.remove();
+    }
+    map = L.map('map').setView([lat, lon], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    L.marker([lat, lon]).addTo(map)
+        .bindPopup('Teacher location')
+        .openPopup();
+}
+
+document.getElementById('close-map').addEventListener('click', function() {
+    const popup = document.getElementById('map-popup');
+    popup.style.visibility = 'hidden';
+});
+
 
 shownUsers.forEach(user => addTeacherCard(user));
-initTable();
 initFavouritesCarousel();
+
+console.log(shownUsers);
+
+function getAgeRange(age) {
+    if (age >= 16 && age <= 25) return '16-25';
+    if (age >= 26 && age <= 35) return '26-35';
+    if (age >= 36 && age <= 45) return '36-45';
+    if (age >= 46 && age <= 55) return '46-55';
+    if (age >= 56 && age <= 65) return '56-65';
+    return '66+';
+}
+
+function getDataCountByAgeRange(users) {
+    return users.reduce((acc, user) => {
+        const range = getAgeRange(user.age);
+        acc[range] = (acc[range] || 0) + 1;
+        return acc;
+    }, {});
+}
+
+const chartColors = [
+    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+    '#F7464A', '#46BFBD', '#FDB45C', '#949FB1', '#4D5360',
+    '#FFC0CB', '#800080', '#FFD700', '#00FF00', '#FF4500',
+    '#8A2BE2', '#DEB887', '#5F9EA0', '#7FFF00', '#D2691E',
+    '#FF7F50', '#6495ED', '#DC143C', '#00FFFF', '#00008B',
+    '#B8860B', '#A9A9A9', '#006400', '#BDB76B', '#8B008B',
+    '#556B2F', '#FF8C00', '#9932CC', '#8B0000', '#E9967A',
+    '#8FBC8F', '#483D8B', '#2F4F4F', '#00CED1', '#9400D3',
+    '#FF1493', '#00BFFF', '#696969', '#1E90FF', '#B22222',
+    '#FFFAF0', '#228B22', '#FFD700', '#DAA520', '#ADFF2F'
+];
+
+function createPieChart(elementId, labels, data, title) {
+    const ctx = document.getElementById(elementId).getContext('2d');
+    return new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: chartColors.slice(0, labels.length),
+            }]
+        },
+        options: {
+            plugins: {
+                title: {
+                    display: true,
+                    text: title
+                }
+            }
+        }
+    });
+}
+
+function getDataCountByKey(users, key) {
+    return users.reduce((acc, user) => {
+        const value = user[key];
+        acc[value] = (acc[value] || 0) + 1;
+        return acc;
+    }, {});
+}
+
+function createSpecialityChart(shownUsers) {
+    const specialityData = getDataCountByKey(shownUsers, "course");
+    const specialityLabels = Object.keys(specialityData);
+    const specialityCounts = Object.values(specialityData);
+    return createPieChart('specialityPieChart', specialityLabels, specialityCounts, 'Speciality Distribution');
+}
+
+function createAgeChart(shownUsers) {
+    const ageData = getDataCountByAgeRange(shownUsers);
+    const ageLabels = Object.keys(ageData);
+    const ageCounts = Object.values(ageData);
+    return createPieChart('agePieChart', ageLabels, ageCounts, 'Age Distribution');
+}
+
+function createGenderChart(shownUsers) {
+    const genderData = getDataCountByKey(shownUsers, "gender");
+    const genderLabels = Object.keys(genderData);
+    const genderCounts = Object.values(genderData);
+    return createPieChart('genderPieChart', genderLabels, genderCounts, 'Gender Distribution');
+}
+
+function createCountryChart(shownUsers) {
+    const countryData = getDataCountByKey(shownUsers, "country");
+    const countryLabels = Object.keys(countryData);
+    const countryCounts = Object.values(countryData);
+    return createPieChart('countryPieChart', countryLabels, countryCounts, 'Nationality Distribution');
+}
+
+function updateCharts(shownUsers) {
+    if (window.specialityChart) window.specialityChart.destroy();
+    if (window.ageChart) window.ageChart.destroy();
+    if (window.genderChart) window.genderChart.destroy();
+    if (window.countryChart) window.countryChart.destroy();
+
+    window.specialityChart = createSpecialityChart(shownUsers);
+    window.ageChart = createAgeChart(shownUsers);
+    window.genderChart = createGenderChart(shownUsers);
+    window.countryChart = createCountryChart(shownUsers);
+}
+
+function getDaysUntilBirthday(birthDate) {
+    const now = dayjs();
+    const nextBirthday = dayjs(birthDate).year(now.year());
+    if (nextBirthday.isBefore(now)) {
+        return dayjs(birthDate).year(now.year() + 1).diff(now, 'day');
+    }
+    return nextBirthday.diff(now, 'day');
+}
+
+
+updateCharts(shownUsers);
+
 

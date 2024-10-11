@@ -1,3 +1,4 @@
+/* eslint-disable */
 const path = require("path");
 const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
@@ -11,7 +12,7 @@ const MinifyPlugin = require("babel-minify-webpack-plugin");
 const devMode = process.env.NODE_ENV !== "production";
 
 const CONFIG = {
-  entry: "./src/js/app.js",
+  entry: "./src/js/script.js",
   mode: process.env.NODE_ENV,
   devtool: "cheap-module-source-map",
   output: {

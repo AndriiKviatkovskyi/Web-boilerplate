@@ -5,6 +5,8 @@
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <title>Teachinder</title>
    <link rel="stylesheet" href="css/styles.css">
+   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
 <header>
@@ -266,22 +268,21 @@
 
 <section class="statistics-section">
    <h2 class="title-name" id="statistics-anchor">Statistics</h2>
-   <table>
-      <thead>
-      <tr>
-         <th class="sortable" data-sort="full_name">Name</th>
-         <th class="sortable" data-sort="course">Speciality</th>
-         <th class="sortable" data-sort="age">Age</th>
-         <th class="sortable" data-sort="gender">Gender</th>
-         <th class="sortable" data-sort="country">Nationality</th>
-      </tr>
-      </thead>
-      <tbody id="statistics-table-body">
 
-      </tbody>
-   </table>
-   <div class="pagination" id="pagination">
+   <div>
+      <canvas id="specialityPieChart" width="400" height="400"></canvas>
+   </div>
 
+   <div>
+      <canvas id="agePieChart" width="400" height="400"></canvas>
+   </div>
+
+   <div>
+      <canvas id="genderPieChart" width="400" height="400"></canvas>
+   </div>
+
+   <div>
+      <canvas id="countryPieChart" width="400" height="400"></canvas>
    </div>
 </section>
 
@@ -516,6 +517,7 @@
                <p class="d-teacher-agesex"></p>
                <p class="d-teacher-email"></p>
                <p class="d-teacher-phone"></p>
+               <p class="d-teacher-days-till-bday"></p>
             </div>
          </div>
          <p class="additional-info"></p>
@@ -523,6 +525,16 @@
       </div>
    </div>
 </div>
+<div id="map-popup">
+   <div class="popup-content">
+      <span id="close-map">&times;</span>
+      <div id="map"></div>
+   </div>
+</div>
+<!--<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>-->
+<!--<script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>-->
+<!--<script src="https://cdn.jsdelivr.net/npm/dayjs@1.10.7/dayjs.min.js"></script>-->
+<script src="/build/app.js"></script>
 <script type="module" src="js/FE4U-Lab2-mock.js"></script>
 <script type="module" src="js/script.js"></script>
 </body>
