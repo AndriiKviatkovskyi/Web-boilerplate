@@ -105,6 +105,11 @@ body {
     color: white;
 }
 
+#load-more-btn{
+    margin-top: 50px;
+    width: 250px;
+}
+
 .horizontal-line {
     width: 50%;
     height: 1px;
