@@ -7,6 +7,7 @@ const port = 3000;
 const projectRoot = process.cwd();
 
 app.use(express.static(path.join(projectRoot, 'src')));
+app.use(express.static(path.join(projectRoot, 'build')));
 app.get('/', (req, res) => {
     res.sendFile(path.join(projectRoot, 'public', 'index.html'));
 });

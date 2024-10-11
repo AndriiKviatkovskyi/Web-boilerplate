@@ -6,7 +6,8 @@
     "start": "concurrently \"npm run server\" \"npm run json-server\"",
     "server": "node src/js/server.js",
     "json-server": "json-server --watch db.json --port 5000",
-    "build": "rm -f build && cross-env NODE_ENV=production webpack --progress",
+    "build": "webpack --progress",
+    "serve": "http-server dist",
     "lint": "eslint src/js",
     "stylelint": "stylelint src/css"
   },
@@ -38,11 +39,13 @@
     "sass-loader": "^8.0.2",
     "stylelint": "^13.9.0",
     "stylelint-config-standard": "^20.0.0",
-    "webpack": "^4.43.0",
-    "webpack-cli": "^3.3.11",
     "webpack-dev-server": "^3.11.0"
   },
   "dependencies": {
-    "express": "^4.21.0"
+    "chart.js": "^4.4.4",
+    "dayjs": "^1.11.13",
+    "express": "^4.21.0",
+    "leaflet": "^1.9.4",
+    "lodash": "^4.17.21"
   }
 }
